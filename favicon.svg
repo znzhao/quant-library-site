@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4f7fd6"/>
+      <stop offset="1" stop-color="#23468f"/>
+    </linearGradient>
+    <linearGradient id="pg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e3ebfa"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="url(#bg)"/>
+  <!-- open book -->
+  <path d="M32 21c-5-4-12-5-19-4v27c7-1 14 0 19 4z" fill="url(#pg)"/>
+  <path d="M32 21c5-4 12-5 19-4v27c-7-1-14 0-19 4z" fill="url(#pg)"/>
+  <path d="M32 21v27" stroke="#23468f" stroke-width="1.6" opacity=".35"/>
+  <!-- sigma on the right page -->
+  <path d="M46 25h-9l4.5 6-4.5 6h9" fill="none" stroke="#2f5fb3" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- text lines on the left page -->
+  <path d="M18 27h9M18 32h9M18 37h6" stroke="#9fb6e3" stroke-width="2.4" stroke-linecap="round"/>
+  <!-- bookmark -->
+  <path d="M41 11h6v12l-3-2.2-3 2.2z" fill="#f2b84b"/>
+</svg>

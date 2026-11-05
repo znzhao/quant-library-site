@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notes Library</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" id="hl-light" href="https://cdn.jsdelivr.net/npm/highlight.js@11.10.0/styles/github.min.css">
+<link rel="stylesheet" id="hl-dark" href="https://cdn.jsdelivr.net/npm/highlight.js@11.10.0/styles/github-dark.min.css" disabled>
+<link rel="stylesheet" href="style.css">
+<script>
+  // apply saved theme before first paint
+  try {
+    const t = localStorage.getItem("theme") ||
+      (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.dataset.theme = t;
+  } catch (e) {}
+</script>
+</head>
+<body>
+<div id="progress"></div>
+
+<header class="topbar">
+  <button class="icon-btn only-narrow" id="btn-lib" aria-label="Library">
+    <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+  </button>
+  <a class="brand" href="./">
+    <img src="favicon.svg" class="brand-icon" alt="">
+    <span data-i18n="brand"></span>
+  </a>
+  <div class="doc-crumb" id="crumb"></div>
+  <div class="spacer"></div>
+  <div class="seg" id="mode-switch" role="group">
+    <button data-mode="notes"></button><button data-mode="slides"></button>
+  </div>
+  <div class="seg" id="lang-switch" role="group">
+    <button data-lang="CN">中</button><button data-lang="EN">EN</button>
+  </div>
+  <button class="icon-btn" id="btn-theme" aria-label="Toggle theme">
+    <svg viewBox="0 0 24 24" class="sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    <svg viewBox="0 0 24 24" class="moon"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+  </button>
+  <button class="icon-btn only-narrow" id="btn-toc" aria-label="Contents">
+    <svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>
+  </button>
+</header>
+
+<div class="layout">
+  <aside class="sidebar left" id="library">
+    <div class="side-title" data-i18n="library"></div>
+    <div class="search"><input id="filter" type="search" autocomplete="off"></div>
+    <nav id="lib-list"></nav>
+  </aside>
+
+  <main id="main">
+    <article class="doc" id="doc"></article>
+  </main>
+
+  <aside class="sidebar right" id="toc-panel">
+    <div class="side-title right-title"></div>
+    <nav id="toc"></nav>
+    <button class="to-top" id="to-top" data-i18n="top"></button>
+  </aside>
+</div>
+<div class="scrim" id="scrim"></div>
+<div class="lightbox" id="lightbox"><img alt=""></div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
