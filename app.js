@@ -456,10 +456,12 @@
       }
       if (body.classList.contains("pseudo-full-on")) return;
       const leftDrawer = innerWidth <= 900, rightDrawer = innerWidth <= 1240;
-      if (swipedLeft) {
+      if (!swipedLeft) {
+        // swipe right: open the left drawer, or close the right one
         if (R) body.classList.remove("toc-open");
         else if (!L && leftDrawer) body.classList.add("lib-open");
       } else {
+        // swipe left: open the right drawer, or close the left one
         if (L) body.classList.remove("lib-open");
         else if (!R && rightDrawer) body.classList.add("toc-open");
       }
