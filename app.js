@@ -291,16 +291,6 @@
     $("#sl-full").onclick = toggleFullscreen;
     docEl.querySelector(".stage-hit.prev").onclick = () => go(deck.index - 1);
     docEl.querySelector(".stage-hit.next").onclick = () => go(deck.index + 1);
-    // swipe left/right on touch screens
-    const stageEl = $("#stage");
-    let tx = null, ty = null;
-    stageEl.addEventListener("touchstart", (e) => { tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, { passive: true });
-    stageEl.addEventListener("touchend", (e) => {
-      if (tx === null) return;
-      const dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty;
-      tx = null;
-      if (Math.abs(dx) > 40 && Math.abs(dx) > 1.5 * Math.abs(dy)) go(deck.index + (dx < 0 ? 1 : -1));
-    }, { passive: true });
     window.scrollTo({ top: 0, behavior: "instant" });
     layoutStage();
     go(Math.min(Math.max(start, 0), slides.length - 1), false);
@@ -310,14 +300,15 @@
   function leaveDeck() {
     if (!deck) return;
     deck = null;
-    document.body.classList.remove("slides-mode");
+    document.body.classList.remove("slides-mode", "pseudo-full-on");
     if (document.fullscreenElement) document.exitFullscreen();
+    else if (document.webkitFullscreenElement && document.webkitExitFullscreen) document.webkitExitFullscreen();
   }
 
   function layoutStage() {
     const stage = $("#stage");
     if (!stage) return;
-    const full = document.fullscreenElement === $("#deck");
+    const full = isFull();
     const w = stage.clientWidth, h = stage.clientHeight;
     const k = full ? Math.min(w / SLIDE_W, h / SLIDE_H) : w / SLIDE_W;
     const ox = (w - SLIDE_W * k) / 2, oy = full ? (h - SLIDE_H * k) / 2 : 0;
@@ -371,21 +362,49 @@
     }
   }
 
+  // Real fullscreen where the browser has it; otherwise (iPhone Safari only allows <video>)
+  // fall back to a "pseudo" fullscreen: the deck covers the whole viewport.
+  function realFullEl() { return document.fullscreenElement || document.webkitFullscreenElement || null; }
+  function isFull() {
+    const el = $("#deck");
+    return !!el && (realFullEl() === el || el.classList.contains("pseudo-full"));
+  }
+  function setPseudoFull(on) {
+    const el = $("#deck");
+    if (!el) return;
+    el.classList.toggle("pseudo-full", on);
+    document.body.classList.toggle("pseudo-full-on", on);
+    document.body.classList.remove("lib-open", "toc-open");
+    window.scrollTo({ top: 0, behavior: "instant" });
+    requestAnimationFrame(layoutStage);
+  }
   function toggleFullscreen() {
     const el = $("#deck");
     if (!el) return;
-    if (document.fullscreenElement) document.exitFullscreen();
-    else if (el.requestFullscreen) {
-      el.requestFullscreen().then(() => {
+    if (el.classList.contains("pseudo-full")) return setPseudoFull(false);
+    if (realFullEl()) {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      return;
+    }
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (!req) return setPseudoFull(true);
+    let p;
+    try { p = req.call(el); } catch (e) { return setPseudoFull(true); }
+    if (p && p.then) {
+      p.then(() => {
         try { screen.orientation && screen.orientation.lock && screen.orientation.lock("landscape").catch(() => {}); } catch (e) {}
-      }).catch(() => {});
+      }).catch(() => setPseudoFull(true));
+    } else {
+      setTimeout(() => { if (!realFullEl()) setPseudoFull(true); }, 400);
     }
   }
   document.addEventListener("fullscreenchange", () => requestAnimationFrame(layoutStage));
+  document.addEventListener("webkitfullscreenchange", () => requestAnimationFrame(layoutStage));
   addEventListener("resize", () => requestAnimationFrame(layoutStage));
 
   addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
+      if (document.body.classList.contains("pseudo-full-on")) setPseudoFull(false);
       $("#lightbox").classList.remove("open");
       document.body.classList.remove("lib-open", "toc-open");
     }
@@ -397,6 +416,55 @@
     else if (k === "End") go(deck.slides.length - 1);
     else if (k === "f" || k === "F") toggleFullscreen();
   });
+
+  // ------------------------------------------------------------------ swipe gestures (touch screens)
+  // Slides: swiping on the slide turns pages. Elsewhere: swiping left opens the library
+  // (left drawer) or closes the contents (right drawer); swiping right opens the contents
+  // or closes the library.
+  (function () {
+    let sx = 0, sy = 0, t0 = 0, target = null, multi = false;
+    const body = document.body;
+    function hScrollable(el) {
+      for (let n = el; n && n !== document.body; n = n.parentElement) {
+        if (n.scrollWidth > n.clientWidth + 4) {
+          const ox = getComputedStyle(n).overflowX;
+          if (ox === "auto" || ox === "scroll") return true;
+        }
+      }
+      return false;
+    }
+    document.addEventListener("touchstart", (e) => {
+      multi = e.touches.length > 1;
+      const t = e.touches[0];
+      sx = t.clientX; sy = t.clientY; t0 = Date.now(); target = e.target;
+    }, { passive: true });
+    document.addEventListener("touchmove", (e) => { if (e.touches.length > 1) multi = true; }, { passive: true });
+    document.addEventListener("touchend", (e) => {
+      if (multi || !target || e.touches.length) { if (!e.touches.length) multi = false; return; }
+      const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+      const el = target; target = null;
+      if (Date.now() - t0 > 900 || Math.abs(dx) < 60 || Math.abs(dx) < 1.6 * Math.abs(dy)) return;
+      if (!(el instanceof Element) || el.closest("input, textarea, select, .lightbox") || hScrollable(el)) return;
+      const sel = window.getSelection && window.getSelection();
+      if (sel && String(sel).length) return;
+      const swipedLeft = dx < 0;
+      const L = body.classList.contains("lib-open"), R = body.classList.contains("toc-open");
+      // pages: whole deck when in pseudo-fullscreen, otherwise just the slide; never while a drawer is open
+      if (deck && !L && !R && (body.classList.contains("pseudo-full-on") ? el.closest("#deck") : el.closest("#stage"))) {
+        go(deck.index + (swipedLeft ? 1 : -1));
+        return;
+      }
+      if (body.classList.contains("pseudo-full-on")) return;
+      const leftDrawer = innerWidth <= 900, rightDrawer = innerWidth <= 1240;
+      if (swipedLeft) {
+        if (R) body.classList.remove("toc-open");
+        else if (!L && leftDrawer) body.classList.add("lib-open");
+      } else {
+        if (L) body.classList.remove("lib-open");
+        else if (!R && rightDrawer) body.classList.add("toc-open");
+      }
+    }, { passive: true });
+  })();
 
   // ------------------------------------------------------------------ toc & scroll spy (notes)
   let heads = [];
